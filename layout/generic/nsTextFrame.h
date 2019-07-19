@@ -149,6 +149,8 @@ class nsTextFrame : public nsFrame {
                                uint32_t aDisplayItemKey = 0,
                                bool aRebuildDisplayItems = true) final;
 
+  void DidSetComputedStyle(ComputedStyle*) final {}
+
 #ifdef DEBUG_FRAME_DUMP
   void List(FILE* out = stderr, const char* aPrefix = "",
             uint32_t aFlags = 0) const final;
