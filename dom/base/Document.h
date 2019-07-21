@@ -2286,7 +2286,7 @@ class Document : public nsINode,
    * Flush notifications for this document and its parent documents
    * (since those may affect the layout of this one).
    */
-  void FlushPendingNotifications(FlushType aType);
+  void FlushPendingNotifications(FlushType aType, Element* aTarget = nullptr);
 
   /**
    * Another variant of the above FlushPendingNotifications.  This function
@@ -2295,7 +2295,7 @@ class Document : public nsINode,
    * If in doublt, use the above FlushPendingNotifications.
    */
   MOZ_CAN_RUN_SCRIPT_BOUNDARY
-  void FlushPendingNotifications(ChangesToFlush aFlush);
+  void FlushPendingNotifications(ChangesToFlush aFlush, Element* aTarget = nullptr);
 
   /**
    * Calls FlushPendingNotifications on any external resources this document

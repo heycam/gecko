@@ -1492,7 +1492,7 @@ Element* nsFocusManager::FlushAndCheckIfFocusable(Element* aElement,
   // Make sure that our frames are up to date while ensuring the presshell is
   // also initialized in case we come from a script calling focus() early.
   mEventHandlingNeedsFlush = false;
-  doc->FlushPendingNotifications(FlushType::EnsurePresShellInitAndFrames);
+  doc->FlushPendingNotifications(FlushType::EnsurePresShellInitAndFrames, aElement);
 
   // this is a special case for some XUL elements or input number, where an
   // anonymous child is actually focusable and not the element itself.

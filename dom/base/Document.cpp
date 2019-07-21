@@ -9935,9 +9935,9 @@ already_AddRefed<Event> Document::CreateEvent(const nsAString& aEventType,
   return ev.forget();
 }
 
-void Document::FlushPendingNotifications(FlushType aType) {
+void Document::FlushPendingNotifications(FlushType aType, Element* aTarget) {
   mozilla::ChangesToFlush flush(aType, aType >= FlushType::Style);
-  FlushPendingNotifications(flush);
+  FlushPendingNotifications(flush, aTarget);
 }
 
 class nsDocumentOnStack {
@@ -9951,7 +9951,7 @@ class nsDocumentOnStack {
   Document* mDoc;
 };
 
-void Document::FlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
+void Document::FlushPendingNotifications(mozilla::ChangesToFlush aFlush, Element* aTarget) {
   FlushType flushType = aFlush.mFlushType;
 
   nsDocumentOnStack dos(this);
@@ -10007,7 +10007,7 @@ void Document::FlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
   }
 
   if (RefPtr<PresShell> presShell = GetPresShell()) {
-    presShell->FlushPendingNotifications(aFlush);
+    presShell->FlushPendingNotifications(aFlush, aTarget);
   }
 }
 

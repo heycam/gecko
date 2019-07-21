@@ -4008,10 +4008,10 @@ void PresShell::NotifyFontFaceSetOnRefresh() {
   }
 }
 
-void PresShell::DoFlushPendingNotifications(FlushType aType) {
+void PresShell::DoFlushPendingNotifications(FlushType aType, Element* aTarget) {
   // by default, flush animations if aType >= FlushType::Style
   mozilla::ChangesToFlush flush(aType, aType >= FlushType::Style);
-  FlushPendingNotifications(flush);
+  FlushPendingNotifications(flush, aTarget);
 }
 
 #ifdef DEBUG
@@ -4038,7 +4038,7 @@ static inline void AssertFrameTreeIsSane(const PresShell& aPresShell) {
 #endif
 }
 
-void PresShell::DoFlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
+void PresShell::DoFlushPendingNotifications(mozilla::ChangesToFlush aFlush, Element* aTarget) {
   // FIXME(emilio, bug 1530177): Turn into a release assert when bug 1530188 and
   // bug 1530190 are fixed.
   MOZ_DIAGNOSTIC_ASSERT(!mForbiddenToFlush, "This is bad!");
@@ -4086,6 +4086,10 @@ void PresShell::DoFlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
 #endif
 
   NS_ASSERTION(flushType >= FlushType::Frames, "Why did we get called?");
+
+  bool didNeedStyleFlush = mNeedStyleFlush;
+  bool didNeedThrottledAnimationFlush = mNeedThrottledAnimationFlush;
+  bool didNeedLayoutFlush = mNeedLayoutFlush;
 
   mNeedStyleFlush = false;
   mNeedThrottledAnimationFlush =
@@ -4176,6 +4180,22 @@ void PresShell::DoFlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
 
     // The FlushResampleRequests() above flushed style changes.
     if (MOZ_LIKELY(!mIsDestroying)) {
+      bool couldSkip = false;
+      if (flushType <= FlushType::EnsurePresShellInitAndFrames && aTarget) {
+        if (nsINode* root = mDocument->GetServoRestyleRoot()) {
+          if (!root->IsDocument() &&
+              !nsContentUtils::ContentIsFlattenedTreeDescendantOfForStyle(aTarget, root)) {
+            /*
+            mNeedStyleFlush = didNeedStyleFlush;
+            mNeedThrottledAnimationFlush = didNeedThrottledAnimationFlush;
+            mNeedLayoutFlush = didNeedLayoutFlush;
+            return;
+            */
+            couldSkip = true;
+          }
+        }
+      }
+
       nsAutoScriptBlocker scriptBlocker;
 #ifdef MOZ_GECKO_PROFILER
       nsCOMPtr<nsIDocShell> docShell = mPresContext->GetDocShell();
@@ -4185,7 +4205,13 @@ void PresShell::DoFlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
 #endif
       PerfStats::AutoMetricRecording<PerfStats::Metric::Styling> autoRecording;
 
+      auto before = PR_Now();
       mPresContext->RestyleManager()->ProcessPendingRestyles();
+      auto after = PR_Now();
+      if (aTarget) {
+        printf("(%s) %0.02fms restyle\n", couldSkip ? "skippable" : "unskippable",
+            double(after - before) / 1000);
+      }
     }
 
     // Process whatever XBL constructors those restyles queued up.  This

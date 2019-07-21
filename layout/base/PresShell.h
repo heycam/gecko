@@ -1451,21 +1451,21 @@ class PresShell final : public nsStubDocumentObserver,
    * @param aType the type of notifications to flush
    */
   MOZ_CAN_RUN_SCRIPT
-  void FlushPendingNotifications(FlushType aType) {
+  void FlushPendingNotifications(FlushType aType, Element* aTarget = nullptr) {
     if (!NeedFlush(aType)) {
       return;
     }
 
-    DoFlushPendingNotifications(aType);
+    DoFlushPendingNotifications(aType, aTarget);
   }
 
   MOZ_CAN_RUN_SCRIPT
-  void FlushPendingNotifications(ChangesToFlush aType) {
+  void FlushPendingNotifications(ChangesToFlush aType, Element* aTarget = nullptr) {
     if (!NeedFlush(aType.mFlushType)) {
       return;
     }
 
-    DoFlushPendingNotifications(aType);
+    DoFlushPendingNotifications(aType, aTarget);
   }
 
   /**
@@ -1840,8 +1840,8 @@ class PresShell final : public nsStubDocumentObserver,
   /**
    * Implementation methods for FlushPendingNotifications.
    */
-  MOZ_CAN_RUN_SCRIPT void DoFlushPendingNotifications(FlushType aType);
-  MOZ_CAN_RUN_SCRIPT void DoFlushPendingNotifications(ChangesToFlush aType);
+  MOZ_CAN_RUN_SCRIPT void DoFlushPendingNotifications(FlushType aType, Element* aTarget);
+  MOZ_CAN_RUN_SCRIPT void DoFlushPendingNotifications(ChangesToFlush aType, Element* aTarget);
 
   struct RenderingState {
     explicit RenderingState(PresShell* aPresShell)
