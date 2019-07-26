@@ -53,6 +53,23 @@ static nsresult HandleFlagWithOptionalArgument(nsICommandLine* aCmdLine,
   return aCmdLine->RemoveArguments(idx, idx + !aValue.IsVoid());
 }
 
+static nsresult HandleFlagWithOptionalArgument(nsICommandLine* aCmdLine,
+                                               const nsAString& aName,
+                                               double& aValue, bool& aPresent) {
+  nsresult rv;
+  nsString s;
+
+  rv = HandleFlagWithOptionalArgument(aCmdLine, aName, s, aPresent);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (!aPresent || s.IsVoid()) {
+    return NS_OK;
+  }
+
+  aValue = s.ToDouble(&rv);
+  return rv;
+}
+
 static nsresult AppendArg(nsIMutableArray* aArray, const nsAString& aString) {
   nsCOMPtr<nsISupportsString> s =
       do_CreateInstance(NS_SUPPORTS_STRING_CONTRACTID);
@@ -67,6 +84,8 @@ nsLayoutDebugCLH::Handle(nsICommandLine* aCmdLine) {
   bool specified;
 
   nsString url;
+  bool autoclose = false;
+  double delay = 0.0;
 
   rv = HandleFlagWithOptionalArgument(
       aCmdLine, NS_LITERAL_STRING("layoutdebug"), url, specified);
@@ -75,6 +94,10 @@ nsLayoutDebugCLH::Handle(nsICommandLine* aCmdLine) {
   if (!specified) {
     return NS_OK;
   }
+
+  rv = HandleFlagWithOptionalArgument(aCmdLine, NS_LITERAL_STRING("autoclose"),
+                                      delay, autoclose);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   nsCOMPtr<nsIMutableArray> argsArray = nsArray::Create();
 
@@ -92,6 +115,14 @@ nsLayoutDebugCLH::Handle(nsICommandLine* aCmdLine) {
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
+  if (autoclose) {
+    nsString arg;
+    arg.AppendPrintf("autoclose=%g", delay);
+
+    rv = AppendArg(argsArray, arg);
+    NS_ENSURE_SUCCESS(rv, rv);
+  }
+
   nsCOMPtr<nsIWindowWatcher> wwatch =
       do_GetService(NS_WINDOWWATCHER_CONTRACTID);
   NS_ENSURE_TRUE(wwatch, NS_ERROR_FAILURE);
@@ -105,6 +136,10 @@ nsLayoutDebugCLH::Handle(nsICommandLine* aCmdLine) {
 
 NS_IMETHODIMP
 nsLayoutDebugCLH::GetHelpInfo(nsACString& aResult) {
-  aResult.AssignLiteral("  --layoutdebug [<url>] Start with Layout Debugger\n");
+  aResult.AssignLiteral(
+      "  --layoutdebug [<url>] Start with Layout Debugger\n"
+      "  --autoclose [<seconds>] Automatically close the Layout Debugger once\n"
+      "                     the page has loaded, after delaying the specified\n"
+      "                     number of seconds (which defaults to 0).\n");
   return NS_OK;
 }
