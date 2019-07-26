@@ -22,41 +22,74 @@ nsLayoutDebugCLH::~nsLayoutDebugCLH() {}
 
 NS_IMPL_ISUPPORTS(nsLayoutDebugCLH, ICOMMANDLINEHANDLER)
 
-NS_IMETHODIMP
-nsLayoutDebugCLH::Handle(nsICommandLine* aCmdLine) {
-  nsresult rv;
+static nsresult HandleFlagWithOptionalArgument(nsICommandLine* aCmdLine,
+                                               const nsAString& aName,
+                                               nsAString& aValue,
+                                               bool& aPresent) {
+  aValue = VoidString();
+  aPresent = false;
 
+  nsresult rv;
   int32_t idx;
-  rv = aCmdLine->FindFlag(NS_LITERAL_STRING("layoutdebug"), false, &idx);
+
+  rv = aCmdLine->FindFlag(aName, false, &idx);
   NS_ENSURE_SUCCESS(rv, rv);
   if (idx < 0) return NS_OK;
+
+  aPresent = true;
 
   int32_t length;
   aCmdLine->GetLength(&length);
 
-  nsAutoString url;
   if (idx + 1 < length) {
-    rv = aCmdLine->GetArgument(idx + 1, url);
+    rv = aCmdLine->GetArgument(idx + 1, aValue);
     NS_ENSURE_SUCCESS(rv, rv);
-    if (!url.IsEmpty() && url.CharAt(0) == '-') url.Truncate();
+
+    if (aValue.IsEmpty() || aValue.CharAt(0) == '-') {
+      aValue = VoidString();
+    }
   }
 
-  aCmdLine->RemoveArguments(idx, idx + !url.IsEmpty());
+  return aCmdLine->RemoveArguments(idx, idx + !aValue.IsVoid());
+}
+
+static nsresult AppendArg(nsIMutableArray* aArray, const nsAString& aString) {
+  nsCOMPtr<nsISupportsString> s =
+      do_CreateInstance(NS_SUPPORTS_STRING_CONTRACTID);
+  NS_ENSURE_TRUE(s, NS_ERROR_FAILURE);
+  s->SetData(aString);
+  return aArray->AppendElement(s);
+}
+
+NS_IMETHODIMP
+nsLayoutDebugCLH::Handle(nsICommandLine* aCmdLine) {
+  nsresult rv;
+  bool specified;
+
+  nsString url;
+
+  rv = HandleFlagWithOptionalArgument(
+      aCmdLine, NS_LITERAL_STRING("layoutdebug"), url, specified);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (!specified) {
+    return NS_OK;
+  }
 
   nsCOMPtr<nsIMutableArray> argsArray = nsArray::Create();
 
   if (!url.IsEmpty()) {
     nsCOMPtr<nsIURI> uri;
+    nsAutoCString resolvedSpec;
+
     rv = aCmdLine->ResolveURI(url, getter_AddRefs(uri));
     NS_ENSURE_SUCCESS(rv, rv);
-    nsCOMPtr<nsISupportsString> scriptableURL =
-        do_CreateInstance(NS_SUPPORTS_STRING_CONTRACTID);
-    NS_ENSURE_TRUE(scriptableURL, NS_ERROR_FAILURE);
-    nsAutoCString resolvedSpec;
+
     rv = uri->GetSpec(resolvedSpec);
     NS_ENSURE_SUCCESS(rv, rv);
-    scriptableURL->SetData(NS_ConvertUTF8toUTF16(resolvedSpec));
-    argsArray->AppendElement(scriptableURL);
+
+    rv = AppendArg(argsArray, NS_ConvertUTF8toUTF16(resolvedSpec));
+    NS_ENSURE_SUCCESS(rv, rv);
   }
 
   nsCOMPtr<nsIWindowWatcher> wwatch =
