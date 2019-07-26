@@ -177,7 +177,7 @@ nsLDBBrowserContentListener.prototype = {
         // This does mean that --autoclose doesn't work when the URL on
         // the command line is about:blank (or not specified), but that's
         // not a big deal.
-        setTimeout(() => window.close, gArgs.delay * 1000);
+        setTimeout(() => window.close(), gArgs.delay * 1000);
       }
     }
   },
@@ -231,11 +231,15 @@ function parseArguments() {
   if (window.arguments) {
     args.url = window.arguments[0];
     for (let i = 1; i < window.arguments.length; ++i) {
-      if (/^autoclose=(.*)/.test(window.arguments[i])) {
+      let arg = window.arguments[i];
+      if (/^autoclose=(.*)/.test(arg)) {
         args.autoclose = true;
         args.delay = +RegExp.$1;
+      } else if (/^profile=(.*)/.test(arg)) {
+        args.profile = true;
+        args.profileFilename = RegExp.$1;
       } else {
-        throw `Unknown option ${window.arguments[i]}`;
+        throw `Unknown option ${arg}`;
       }
     }
   }
@@ -259,6 +263,20 @@ function OnLDBLoad() {
   };
 
   gArgs = parseArguments();
+
+  if (gArgs.profile) {
+    if (Services.profiler) {
+      Services.profiler.StartProfiler(
+        1 << 20,
+        1,
+        ["default"],
+        ["GeckoMain", "Compositor", "Renderer", "RenderBackend", "StyleThread"]
+      );
+    } else {
+      dump("Cannot profile Layout Debugger; profiler was not compiled in.\n");
+    }
+  }
+
   if (gArgs.url) {
     loadURI(gArgs.url);
   }
@@ -281,6 +299,11 @@ function checkPersistentMenus() {
 }
 
 function OnLDBUnload() {
+  if (gArgs.profile && Services.profiler) {
+    Services.profiler.dumpProfileToFile(gArgs.profileFilename);
+    dump(`Wrote profile to ${gArgs.profileFilename}\n`);
+  }
+
   gDebugger.detachBrowser();
 }
 
