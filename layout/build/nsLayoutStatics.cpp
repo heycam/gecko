@@ -323,6 +323,7 @@ nsresult nsLayoutStatics::Initialize() {
 
   ThirdPartyUtil::Startup();
 
+  MOZ_ASSERT(false, "an assertion");
   return NS_OK;
 }
 

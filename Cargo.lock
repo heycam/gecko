@@ -1927,6 +1927,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "mozglue_stackwalk"
+version = "0.1.0"
+
+[[package]]
 name = "mozilla-central-workspace-hack"
 version = "0.1.0"
 dependencies = [

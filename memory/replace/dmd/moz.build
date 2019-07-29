@@ -13,6 +13,12 @@ UNIFIED_SOURCES += [
 ]
 
 if not CONFIG['MOZ_REPLACE_MALLOC_STATIC']:
+    LOCAL_INCLUDES += [
+        '/mozglue/misc/rust',
+    ]
+    USE_LIBS += [
+        'mozglue_stackwalk',
+    ]
     UNIFIED_SOURCES += [
         '/mfbt/HashFunctions.cpp',
         '/mfbt/JSONWriter.cpp',

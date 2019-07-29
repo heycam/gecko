@@ -84,3 +84,8 @@ SOURCES += [
 if CONFIG['CC_TYPE'] == 'clang':
     # Suppress warnings from third-party V8 Decimal code.
     SOURCES['decimal/Decimal.cpp'].flags += ['-Wno-implicit-fallthrough']
+
+
+DIRS += ['rust']
+LOCAL_INCLUDES += ['/mozglue/misc/rust']
+USE_LIBS += ['mozglue_stackwalk']

@@ -38,14 +38,14 @@ def GeckoBinary(linkage='dependent', mozglue=None):
 
     if mozglue:
         if mozglue == 'program':
-            USE_LIBS += ['mozglue']
+            USE_LIBS += ['mozglue', 'mozglue_stackwalk']
             DEFINES['MOZ_HAS_MOZGLUE'] = True
             if CONFIG['MOZ_GLUE_IN_PROGRAM'] and CONFIG['CC_TYPE'] in ('clang', 'gcc'):
                 LDFLAGS += ['-rdynamic']
         elif mozglue == 'library':
             LIBRARY_DEFINES['MOZ_HAS_MOZGLUE'] = True
             if not CONFIG['MOZ_GLUE_IN_PROGRAM']:
-                USE_LIBS += ['mozglue']
+                USE_LIBS += ['mozglue', 'mozglue_stackwalk']
         else:
             error('`mozglue` must be "program" or "library"')
 

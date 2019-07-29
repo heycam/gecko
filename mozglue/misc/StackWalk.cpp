@@ -783,6 +783,27 @@ MFBT_API void MozStackWalk(MozWalkStackCallback aCallback, uint32_t aSkipFrames,
 
 #  endif
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <mozglue_stackwalk.h>
+
+void LookupSymbol(void* aPC, MozCodeAddressDetails* aDetails, const char* aFilename) {
+  int fd = open(aFilename, O_RDONLY);
+  if (fd != -1) {
+    struct stat s;
+    if (fstat(fd, &s) != -1) {
+      size_t length = s.st_size;
+      void* image = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, 0);
+      describe_code_address(image, aPC);
+      strncpy(aDetails->function, "something", sizeof(aDetails->function));
+      munmap(image, length);
+    }
+    close(fd);
+  }
+}
+
 bool MFBT_API MozDescribeCodeAddress(void* aPC,
                                      MozCodeAddressDetails* aDetails) {
   aDetails->library[0] = '\0';
@@ -804,6 +825,9 @@ bool MFBT_API MozDescribeCodeAddress(void* aPC,
 
   const char* symbol = info.dli_sname;
   if (!symbol || symbol[0] == '\0') {
+    if (info.dli_fname[0] != '\0') {
+      LookupSymbol(aPC, aDetails, info.dli_fname);
+    }
     return true;
   }
 

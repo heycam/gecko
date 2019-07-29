@@ -1,0 +1,15 @@
+[package]
+name = "mozglue_stackwalk"
+version = "0.1.0"
+
+[dependencies]
+
+[lib]
+path = "lib.rs"
+crate-type = ["staticlib"]
+test = false
+doctest = false
+bench = false
+doc = false
+plugin = false
+harness = false
